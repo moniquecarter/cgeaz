@@ -19,3 +19,17 @@ __pycache__/
 *.zip
 .DS_Store
 lab1-evidence.json
+
+# Hummingbird capstone: keep out of the public repo
+*.pptx
+*.xlsx
+*.vsdx
+Govern a secure research environment*.pdf
+
+# Prowler default output folder (raw scans can include subscription IDs);
+# curated scans go in evidence/prowler/ on purpose
+output/
+
+# Local Terraform variable files can hold subscription IDs and emails
+*.tfvars
+!*.tfvars.example
