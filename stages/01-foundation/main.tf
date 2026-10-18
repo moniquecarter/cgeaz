@@ -24,6 +24,7 @@ resource "azurerm_resource_group" "sandbox" {
     env     = var.environment
     owner   = var.owner_email
     purpose = "cge-az-labs"
+    project = "hummingbird-securenest"
   }
 }
 
