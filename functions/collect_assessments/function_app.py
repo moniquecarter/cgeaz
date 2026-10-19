@@ -23,6 +23,30 @@ ARM = "https://management.azure.com"
 API_VERSION = "2021-06-01"
 
 
+def _assessment_metadata(subscription_id: str, token: str) -> dict:
+    """Severity and categories live on the assessment *metadata*, which the List call
+    never returns (Assessments - List has no $expand). Fetch the catalog once per run
+    and join on the assessment key, instead of one Get per finding.
+    """
+    url = (
+        f"{ARM}/subscriptions/{subscription_id}"
+        f"/providers/Microsoft.Security/assessmentMetadata?api-version={API_VERSION}"
+    )
+    catalog = {}
+    try:
+        while url:
+            resp = requests.get(url, headers={"Authorization": f"Bearer {token}"}, timeout=60)
+            resp.raise_for_status()
+            payload = resp.json()
+            for item in payload.get("value", []):
+                catalog[item["name"]] = item.get("properties", {})
+            url = payload.get("nextLink")
+    except requests.RequestException as exc:
+        # Missing severity is better than a missed collection run: keep going, say so.
+        logging.warning("assessment metadata unavailable, severity will be empty: %s", exc)
+    return catalog
+
+
 def _collect() -> dict:
     subscription_id = os.environ["SUBSCRIPTION_ID"]
     cosmos_endpoint = os.environ["COSMOS_ENDPOINT"]
@@ -42,6 +66,8 @@ def _collect() -> dict:
         .get_container_client("assessments")
     )
 
+    metadata = _assessment_metadata(subscription_id, token)
+
     url = (
         f"{ARM}/subscriptions/{subscription_id}"
         f"/providers/Microsoft.Security/assessments?api-version={API_VERSION}"
@@ -54,6 +80,7 @@ def _collect() -> dict:
 
         for assessment in payload.get("value", []):
             props = assessment.get("properties", {})
+            meta = props.get("metadata") or metadata.get(assessment["name"], {})
             resource_id = (
                 props.get("resourceDetails", {}).get("Id")
                 or props.get("resourceDetails", {}).get("id", "")
@@ -71,8 +98,8 @@ def _collect() -> dict:
                     "displayName": props.get("displayName"),
                     "status": props.get("status", {}).get("code"),
                     "statusCause": props.get("status", {}).get("cause"),
-                    "severity": props.get("metadata", {}).get("severity"),
-                    "categories": props.get("metadata", {}).get("categories"),
+                    "severity": meta.get("severity"),
+                    "categories": meta.get("categories"),
                     "resourceId": resource_id,
                     "collectedAt": collected_at,
                     "runId": run_id,
