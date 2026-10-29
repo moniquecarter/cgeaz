@@ -38,7 +38,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The wrapper reports exit code 2 (drift) as success, so the issue step never ran.
       - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
 
       - uses: azure/login@v2
         with:
