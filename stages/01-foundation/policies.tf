@@ -1,4 +1,4 @@
-# Three policies, one initiative, assigned once at mg-grc-sandbox.
+# Three starter policies plus Hummingbird's own (policies-hbai.tf), one initiative, assigned once at mg-grc-sandbox.
 # Every subscription that ever joins the sandbox group inherits all of it. (CSF: GV.PO, PR.DS, PR.PS)
 
 # --- 1. Require the `env` tag on resource groups (inventory hygiene; POA&M owner resolution) ---
@@ -140,6 +140,7 @@ resource "azurerm_management_group_policy_set_definition" "grc_baseline" {
   parameters = jsonencode({
     tagEffect        = { type = "String", defaultValue = "Audit" }
     publicBlobEffect = { type = "String", defaultValue = "Deny" }
+    blobLogsEffect   = { type = "String", defaultValue = "AuditIfNotExists" }
     workspaceId      = { type = "String" }
   })
 
@@ -163,6 +164,16 @@ resource "azurerm_management_group_policy_set_definition" "grc_baseline" {
       workspaceId = { value = "[parameters('workspaceId')]" }
     })
   }
+
+  # Hummingbird's own (policies-hbai.tf). The reference ID is what a remediation task names.
+  policy_definition_reference {
+    policy_definition_id = azurerm_policy_definition.blob_access_logs.id
+    reference_id         = "hbaiBlobAccessLogs"
+    parameter_values = jsonencode({
+      effect      = { value = "[parameters('blobLogsEffect')]" }
+      workspaceId = { value = "[parameters('workspaceId')]" }
+    })
+  }
 }
 
 resource "azurerm_management_group_policy_assignment" "grc_baseline" {
@@ -175,6 +186,7 @@ resource "azurerm_management_group_policy_assignment" "grc_baseline" {
   parameters = jsonencode({
     tagEffect        = { value = var.tag_policy_effect }
     publicBlobEffect = { value = var.public_blob_policy_effect }
+    blobLogsEffect   = { value = var.blob_access_logs_effect }
     workspaceId      = { value = azurerm_log_analytics_workspace.grc.id }
   })
 

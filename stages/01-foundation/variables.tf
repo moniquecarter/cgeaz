@@ -34,3 +34,13 @@ variable "public_blob_policy_effect" {
     error_message = "public_blob_policy_effect must be Audit, Deny, or Disabled."
   }
 }
+
+variable "blob_access_logs_effect" {
+  description = "Effect for hbai-dine-blob-access-logs. Audit first; DeployIfNotExists once the cost is known."
+  type        = string
+  default     = "AuditIfNotExists"
+  validation {
+    condition     = contains(["DeployIfNotExists", "AuditIfNotExists", "Disabled"], var.blob_access_logs_effect)
+    error_message = "blob_access_logs_effect must be DeployIfNotExists, AuditIfNotExists, or Disabled."
+  }
+}
