@@ -12,6 +12,7 @@ and it's a first-class criterion on the capstone rubric.
 | `cge-require-env-tag-rg` (Audit) | Inventory hygiene; owner accountability feeds the POA&M | ID.AM |
 | `cge-deny-public-blob` (Deny) | Prevents public blob exposure at the API, before the resource exists | PR.DS |
 | `cge-dine-storage-diagnostics` (DeployIfNotExists) | Logging that enforces its own coverage | PR.PS, DE.CM |
+| `hbai-dine-blob-access-logs` (AuditIfNotExists → DeployIfNotExists) — **own** | Blob access logs (read/write/delete) to the GRC workspace; closes the starter's metrics-only gap, so "who touched the evidence" has an answer | DE.CM, PR.PS |
 | Remediation identity (user-assigned, whitelist roles) | Every automated change has a named, auditable author | PR.AA, GV.RR |
 | Log Analytics workspace + Activity Log routing | Central audit trail beyond the 90-day default | DE.CM, PR.PS |
 
