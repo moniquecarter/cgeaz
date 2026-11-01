@@ -6,7 +6,8 @@ again. Anything not listed here is either fixed or still open on the POA&M.
 
 Source: Prowler 5.43.0 IaC scan (`prowler iac --scan-path stages`, Trivy 0.76.0
 underneath), 2026-11-01, after the HTTPS-only fix. That scan reported 13 failed checks;
-nine are accepted below, four are planned fixes (see the end of this file).
+nine are accepted below, three are fixed in Azure but still reported by the scanner, and
+one is a planned fix (see the end of this file).
 
 **Scoring.** Impact comes from the Prowler severity (critical 5, high 4, medium 3, low 2).
 Likelihood is analyst judgment, with the reason written down. Rating = likelihood × impact.
@@ -50,8 +51,9 @@ private endpoints), which costs more than this sandbox's $10/month budget allows
   delete a report.
 - All three accounts: TLS 1.2 minimum, public blob access off, and `cge-deny-public-blob`
   denies turning it on.
-- Storage diagnostics routed to `law-grc-sandbox` by `cge-dine-storage-diagnostics`
-  (coverage of these three accounts still to be verified; see AZU-0057 below).
+- Blob access logs (read, write, delete) from every storage account to `law-grc-sandbox`,
+  deployed and kept in place by the own policy `hbai-dine-blob-access-logs` (see AZU-0057
+  below), so any use of a leaked key leaves a record.
 
 **Residual risk.** The two Function runtime accounts still allow shared keys, because the
 Functions runtime connects with one. Anyone holding a key could reach them from the
@@ -111,11 +113,44 @@ with the enclave's availability requirement.
 
 ---
 
+## Not accepted: fixed in Azure, still reported by the scanner
+
+### AZU-0057: Storage logging not enabled (Medium, 3 storage accounts)
+
+**Status: fixed 2026-11-01** by the own policy `hbai-dine-blob-access-logs`
+(`stages/01-foundation/policies-hbai.tf`). The IaC scan will keep reporting it; that is a
+scanner limitation, not an open risk.
+
+**What we found.** The starter policy `cge-dine-storage-diagnostics` reported Compliant on
+all three accounts, but it routes only account-level `Transaction` metrics. Blob access
+logs live on the blob service (`blobServices/default`), and the evidence store had no
+diagnostic setting there at all. Nobody could answer "who read or deleted evidence?".
+Compliant, but not effective.
+
+**What fixed it.** A DeployIfNotExists policy in the baseline initiative routes
+`StorageRead`, `StorageWrite` and `StorageDelete` from every blob service in the sandbox
+to `law-grc-sandbox`. Rolled out audit first:
+
+| Step | Result |
+|---|---|
+| AuditIfNotExists | 5 of 5 blob services NonCompliant (includes the seed and Terraform state accounts) |
+| Escalation | Reviewed PR: effect to DeployIfNotExists |
+| Remediation task (`ReEvaluateCompliance`), run as `id-grc-remediation-dev` | 5 deployed, 0 failed |
+| Next evaluation | 5 of 5 Compliant; evidence store shows `ds-blob-access-to-grc` with all three categories |
+
+**Why the scanner still flags it.** Trivy's AZU-0057 passes only on the
+`queue_properties { logging {} }` block: classic Storage Analytics logging for the Queue
+service, stored in the account's own `$logs` container and deprecated in azurerm 4.x. It
+would not log blob access, and it cannot see diagnostic settings deployed by policy.
+Prowler's Azure provider has no blob-logging check either (5.43.0), so Azure Policy
+compliance is the verification.
+
+**Mappings.** NIST 800-53 AU-2, AU-12 · CSF 2.0 DE.CM, PR.PS
+
 ## Not accepted: planned fixes
 
 | Check | Severity | Resources | Plan |
 |---|---|---|---|
-| AZU-0057 storage logging not enabled | Medium | 3 storage accounts | Verify the diagnostic settings deployed by `cge-dine-storage-diagnostics`; if present, record it as a scanner gap (Trivy reads the older logging block). If missing, run a remediation task or add them in Terraform. |
 | AZU-0060 no customer-managed key on the evidence store | Medium | `azurerm_storage_account.evidence` | Capstone phase 3: Key Vault with purge protection, a rotating key, and CMK on the evidence store (CSA AICM CEK-03, CEK-12, CEK-14). |
 
 ## History
@@ -123,3 +158,4 @@ with the enclave's availability requirement.
 | Date | Change |
 |---|---|
 | 2026-11-01 | RA-001 to RA-003 accepted after the Prowler IaC baseline. Fixed in the same pass: AZU-0004 (HTTPS-only on both Function Apps), and the plaintext keys in local plan files (deleted). |
+| 2026-11-01 | AZU-0057 fixed by `hbai-dine-blob-access-logs` (audit, escalate, remediate: 5 of 5 Compliant); recorded as a scanner limitation. RA-001 compensating controls updated to include blob access logs. |
