@@ -31,6 +31,7 @@ resource "azurerm_linux_function_app" "collectors" {
   service_plan_id            = azurerm_service_plan.collectors.id
   storage_account_name       = azurerm_storage_account.func_internal.name
   storage_account_access_key = azurerm_storage_account.func_internal.primary_access_key
+  https_only                 = true
 
   identity {
     type = "SystemAssigned"
