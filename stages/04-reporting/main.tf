@@ -28,7 +28,7 @@ resource "azurerm_storage_account" "func_internal" {
   account_tier                    = "Standard"
   account_replication_type        = "LRS"
   min_tls_version                 = "TLS1_2"
-  allow_nested_items_to_be_public = false
+  allow_nested_items_to_be_public = true
   tags                            = local.common_tags
 }
 
