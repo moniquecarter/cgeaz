@@ -30,12 +30,15 @@ jobs:
     if: ${{ vars.AZURE_CLIENT_ID != '' }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         stage: [01-foundation, 03-evidence-store, 04-reporting, 06-enforcement]
     steps:
       - uses: actions/checkout@v4
 
       - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
 
       - uses: azure/login@v2
         with:
@@ -58,8 +61,13 @@ jobs:
           terraform plan -input=false -out=tf.plan
           terraform show -json tf.plan > plan.json
 
-      - name: OPA gate (conftest)
-        uses: instrumenta/conftest-action@master
-        with:
-          files: stages/${{ matrix.stage }}/plan.json
-          policy: policy
+      # Pinned conftest + checksum, instead of instrumenta/conftest-action@master: that action
+      # bundles an OPA older than 0.59 that can't parse `import rego.v1`, and an unpinned
+      # @master is a supply-chain risk. 0.71.1 (OPA 1.21.1) matches local validation.
+      - name: OPA gate (conftest 0.71.1, pinned)
+        run: |
+          curl -sSfL -o conftest.tar.gz \
+            https://github.com/open-policy-agent/conftest/releases/download/v0.71.1/conftest_0.71.1_Linux_x86_64.tar.gz
+          echo "c3f6b2a753bd56e377a1e51a95ae3e057f926f2e9139f7d5b5dfbbaf810f7985  conftest.tar.gz" | sha256sum -c -
+          tar -xzf conftest.tar.gz conftest
+          ./conftest test stages/${{ matrix.stage }}/plan.json -p policy

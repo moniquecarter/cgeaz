@@ -5,6 +5,7 @@
 *.tfplan
 tfplan
 plan.json
+plan.txt
 crash.log
 
 # Backend config is machine-generated per learner (bootstrap.sh)
