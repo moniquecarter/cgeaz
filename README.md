@@ -23,7 +23,9 @@ the next collection.
 1. **[docs/SETUP.md](docs/SETUP.md)** — one-time setup (free account, providers,
    regional quirks, cost guardrails). Do not skip it.
 2. **labs/01-sandbox → labs/06-loop** — one lab per course domain, in order.
-3. **[docs/VALIDATION-LOG.md](docs/VALIDATION-LOG.md)** — every lab was run end-to-end
+3. **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — stage flow, data flow, partition
+   keys, and identity boundaries. Read it before Lab 3; extend it for your capstone.
+4. **[docs/VALIDATION-LOG.md](docs/VALIDATION-LOG.md)** — every lab was run end-to-end
    on a brand-new free account before shipping; this is what broke and how the labs
    route around it. If a step surprises you, look here first.
 
@@ -58,6 +60,11 @@ Your graded capstone is this pipeline, running in your subscription, from your f
 with your own modifications. Rubric and submission checklist: `docs/RUBRIC.md`
 (published with the course). Stage 5 is optional — extra credit if present, zero
 penalty if absent.
+
+The brief describes an estate far bigger than one free sandbox. `./seed-estate.sh`
+closes that gap: it deploys about a dozen cheap resources into your subscription,
+several deliberately misconfigured, so your discovery, assessments, and reports have
+real findings with real resource IDs. `./seed-estate.sh --teardown` removes them.
 
 ---
 

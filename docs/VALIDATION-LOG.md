@@ -195,3 +195,54 @@ runnable `TF_VAR_state_storage_account=stgrctfstateXXXXXXXX` placeholder lines i
 4 and 5 now derive the value from `backend.hcl` (copied verbatim, the placeholder
 produced a cryptic `no such host`). macOS/Homebrew Python needs a venv for the seed
 script (PEP 668 `externally-managed-environment`) — noted in Lab 4.
+
+## Capstone seed script (2026-10-22)
+
+### F20 — the capstone video references `seed-estate.sh`, which never shipped
+
+Found by a learner in the study group (thank you, Ben). The Domain 7 capstone video
+("One subscription is enough") tells you to run `seed-estate.sh` from the repo to
+deploy about a dozen deliberately misconfigured resources; the file was not in the
+repo at launch, and SETUP.md step 2 (provider registration) is unrelated to it.
+**Fix:** `seed-estate.sh` now lives at the repo root next to `self-check.sh`, with a
+`--teardown` mode, and RUBRIC.md has a "Seeding your estate" section.
+**Validation status:** `bash -n` and shellcheck clean, every CLI flag confirmed
+against Azure CLI 2.90 — but the validation subscription's free credit had expired
+and the subscription was read-only on the day, so this script has **not** yet had an
+end-to-end run on a live account. If you are the first to run it, a PR with what
+broke (or a note that nothing did) earns a credit in this log.
+
+### F21 — two more files the course videos reference that were not in the repo
+
+Found while fixing F20. The Domain 1 setup lesson names
+`labs/00-setup/register-providers.sh` ("the setup script registers all eight up
+front") and the capstone lesson lists `docs/ARCHITECTURE.md` in the expected
+submission layout; neither existed. **Fix:** both now ship. The provider script
+registers the eight pipeline namespaces plus the three the seeded estate uses, skips
+what is already registered, and waits for completion; SETUP.md step 2 calls it. The
+architecture doc describes the starter's stage flow, stage contracts, data flow,
+partition-key reasoning, and identity boundaries, and the rubric's dimension 5 now
+points at it as the baseline to extend. Validation: shell syntax and shellcheck only,
+same read-only-subscription caveat as F20.
+
+### F22 — seed-estate.sh, first live run (free account, 2026-10-22)
+
+Run by a learner in the study group (thank you, Ben — six runs, zero errors on the
+sixth, PR #8). Four things broke on a real free account that syntax checks could not
+catch:
+
+1. `az keyvault create --enable-purge-protection false` is rejected by the API
+   (`enablePurgeProtection cannot be set to false`). Flag removed; purge protection is
+   off by default, so the misconfiguration stands.
+2. Free accounts can have **zero F1 App Service quota in eastus** — the same regional
+   pattern as Y1 in F9. `SEED_APP_LOCATION` now overrides the App Service region;
+   `centralus` worked.
+3. A failed F1 create left the plan name reserved in eastus for over an hour, blocking
+   creation elsewhere. The plan name is now region-suffixed.
+4. A re-run errored `vault already exists`; the create is skipped when the vault
+   exists.
+
+Also learned: Azure retired TLS 1.0/1.1 for storage accounts in February 2026, so
+`--min-tls-version TLS1_0` is silently upgraded to 1.2 and there is no storage TLS
+finding to claim. The flag and the claim are gone; HTTP-allowed, public blob, and
+shared keys remain. App Service still accepts a TLS 1.0 floor, so that finding stays.
