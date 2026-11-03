@@ -32,3 +32,13 @@ variable "functions_location" {
   type        = string
   default     = "centralus"
 }
+
+variable "deployer_object_id" {
+  description = "Object ID of the human deployer who gets data-plane write on the evidence store. Unset = whoever runs Terraform (local runs). CI sets it, so a CI plan never moves the role to the CI identity."
+  type        = string
+  default     = null
+  validation {
+    condition     = var.deployer_object_id == null ? true : can(regex("^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})?$", var.deployer_object_id))
+    error_message = "deployer_object_id must be an Entra object ID (GUID) or unset."
+  }
+}
