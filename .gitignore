@@ -4,6 +4,7 @@
 *.tfstate.*
 *.tfplan
 tfplan
+tf.plan
 plan.json
 plan.txt
 crash.log
