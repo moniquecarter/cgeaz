@@ -12,7 +12,7 @@ versioned vendor source, and every row says which one.
                     carries the AICM CEK IDs; FedRAMP 20x KSI). Two pivots:
                     800-53 base controls (CCM and KSI) and CSF 2.0 subcategories,
                     matched exactly (CCM only; the KSI file has no CSF references).
-                    Coarser than direct, so it is labelled as derived and keeps the
+                    Coarser than direct, so it is labeled as derived and keeps the
                     pivot controls that produced each link.
 
 Run as YOU (az login); the deployer's Cosmos data role comes from stage 03:
@@ -86,7 +86,7 @@ def initiative(set_id, token):
     return resp.json()
 
 
-# --- control-ID normalisation -----------------------------------------------
+# --- control-ID normalization -----------------------------------------------
 
 def csf_id(group, prefix):
     """NIST_CSF_v2.0_PR.AA_05 -> PR.AA-05; NIST_CSF_v2.0_PR.AA -> PR.AA."""
