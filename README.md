@@ -38,7 +38,7 @@ Every stage has its own state and reads the others only through their outputs. M
 (data flow, partition keys, identity boundaries): [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 **Schedules (UTC):** collection 05:00 daily, POA&M 06:00 daily, SAR 07:00 Mondays, drift
-check 08:00 daily.
+check 08:00 daily, tripwire hourly.
 
 **Identities.** No stored credentials: Functions use managed identities, CI uses OIDC
 federation. Each identity holds only its job's roles. The collector can write
@@ -56,6 +56,7 @@ exception, shared keys on the two Functions runtime accounts, is documented in
 | **SAR "Findings by framework"**, with the stored queries that reproduce every number | Makes the crosswalk visible in a report, read from the store only | `functions/reports/function_app.py`, PR #20 |
 | **Working CI gate**: conftest 0.71.1 pinned with a SHA-256 check, `fail-fast: false` | The original action bundled an OPA that couldn't parse the policies, so no policy was ever evaluated; it was also an unpinned third-party action | `.github/workflows/gate.yml`, PR #14. A test PR proves it blocks: #15 |
 | **Drift detector fix** (`terraform_wrapper: false`) | The wrapper swallowed exit code 2, so drift was never reported | `.github/workflows/drift.yml`, PR #2 |
+| **Tripwire**: hourly log alert on Activity Log writes and deletes by anyone but the remediation identity | The second drift direction, "who is touching reality?", was described in the starter but never built | `stages/01-foundation/tripwire.tf` |
 | **Pinned deployer identity** for stage 03 | CI plans wanted to move evidence-store write access from the owner to the CI identity, a nightly false alarm and a separation-of-duties risk | `stages/03-evidence-store`, PR #17 |
 | **Prowler IaC scanning before deploy**, with HTTPS-only enforced on both Function Apps | Shift-left: Terraform is scanned (Prowler 5.43.0 with Trivy) before it reaches Azure; remaining findings are fixed or formally accepted | PR #9, [RISK-ACCEPTANCES.md](docs/RISK-ACCEPTANCES.md) |
 
@@ -129,8 +130,10 @@ Never apply stage 03 from CI.
 
 `plan` → `prowler iac` → pull request → the gate runs `terraform plan` and conftest on
 all four pipeline stages → merge → `apply` the saved plan locally → delete the plan file.
-Nothing changes through the portal; the drift detector opens an issue when Azure and the
-code disagree.
+Nothing changes through the portal. Two detectors check that: the drift job opens an issue
+when Azure and the code disagree, and the tripwire emails the owner within about an hour
+when anyone other than the remediation identity changes Azure. Every tripwire alert should
+match a merged pull request.
 
 ## Evidence and reports
 
