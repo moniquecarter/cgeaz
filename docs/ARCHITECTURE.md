@@ -181,7 +181,7 @@ stage 04 storage account. The plan succeeded, conftest denied it, and the merge 
 stayed disabled. `main` requires a pull request and the four `gate (…)` checks, with no
 bypass, including for admins.
 
-**Defence in depth.** The same mistake is stopped twice: by conftest before merge, and by
+**Defense in depth.** The same mistake is stopped twice: by conftest before merge, and by
 the Deny policy `cge-deny-public-blob` at deploy time if anyone applies around the gate.
 
 **Scanning before deploy.** Terraform is also scanned with Prowler 5.43.0 (`prowler iac`,
@@ -211,7 +211,7 @@ Defender assessment ─(metadata: policyDefinitionId)─▶ Azure Policy definit
 
 **Row shape:** `frameworkId` (partition key), `assessmentId`, `controls`, `derivation`
 (`direct`, or `via-` plus the pivot frameworks), `pivotControls` for derived rows,
-`source` (name and version), `buildId`, `builtAt`. Identifiers are normalised to one
+`source` (name and version), `buildId`, `builtAt`. Identifiers are normalized to one
 spelling (`PR.AA_05` → `PR.AA-05`, `AT-2.2` and `AT-2 (2)` → `AT-2(2)`).
 
 **Design choices:**
@@ -250,7 +250,7 @@ and the stored queries that reproduce every number.
 | **Rollback** | Set `blob_access_logs_effect = "Disabled"`. Settings already deployed stay until removed by hand. |
 | **Evidence** | Audit: 5 of 5 blob services NonCompliant. Remediation task (with `ReEvaluateCompliance`): 5 deployed, 0 failed. Re-scan: 5 of 5 Compliant. `StorageBlobLogs` arrives from all five accounts. |
 
-The IaC scanner still reports the matching finding (Trivy AZU-0057): it only recognises a
+The IaC scanner still reports the matching finding (Trivy AZU-0057): it only recognizes a
 deprecated queue-logging block and cannot see settings deployed by policy. Azure Policy
 compliance is the verification.
 
