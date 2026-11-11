@@ -39,12 +39,18 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "out_of_band_writes" {
   scopes              = [azurerm_log_analytics_workspace.grc.id]
   severity            = 2
 
+  # Look back 2 hours by event time, but count only events that ARRIVED in the last hour.
+  # Activity Log events reach the workspace minutes after they happen; with a plain 1-hour
+  # window, an event from just before the hour that arrives just after it falls between two
+  # evaluations and never alerts. The overlap catches it; the ingestion filter stops the
+  # same event alerting twice.
   evaluation_frequency = "PT1H"
-  window_duration      = "PT1H"
+  window_duration      = "PT2H"
 
   criteria {
     query = <<-KQL
       AzureActivity
+      | where ingestion_time() > ago(1h)
       | where CategoryValue == "Administrative"
       | where ActivityStatusValue in~ ("Success", "Succeeded")
       | where OperationNameValue endswith "/write" or OperationNameValue endswith "/delete"
