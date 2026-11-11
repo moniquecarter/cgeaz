@@ -285,8 +285,13 @@ compliance is the verification.
   time, not continuous coverage.
 - **The tripwire alerts on the owner's own applies.** `terraform apply` runs as the owner,
   so every apply produces an alert. That is intended: each alert is checked against the
-  merged pull requests, and one without a matching PR is out-of-band. It also has limits:
-  up to about an hour plus ingestion delay, no data-plane operations (blob reads and
+  merged pull requests, and one without a matching PR is out-of-band. Proven on
+  2026-11-11 with a deliberate CLI tag on `rg-grc-sandbox-dev`: the tripwire fired (caller
+  = owner) and `drift.yml` opened an issue; tag removed, drift re-run clean. The rule looks
+  back 2 hours but counts only events ingested in the last hour, so an event that reaches
+  the workspace late can't fall between two evaluations (the first version used a plain
+  1-hour window and had that gap). Remaining limits: about an hour plus ingestion delay,
+  no data-plane operations (blob reads and
   deletes are in `StorageBlobLogs`, Cosmos documents aren't covered), and it depends on
   the Activity Log export, which was set up with the CLI in Lab 02. Deleting that export
   is itself a `/delete` the tripwire reports, as long as that last event is exported.
