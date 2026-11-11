@@ -1,7 +1,7 @@
 name: drift-detection
 
 # Detector 1 of 2: does reality still match the code? (Detector 2 is the KQL tripwire —
-# who's been touching reality? — scheduled in Log Analytics.)
+# who's been touching reality? — an hourly log alert in stages/01-foundation/tripwire.tf.)
 # terraform plan -detailed-exitcode: 0 = clean, 2 = drift. Drift opens an issue with the diff.
 
 on:

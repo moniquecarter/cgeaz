@@ -165,8 +165,22 @@ reviewed one-line diff and dry-run keeps a human at the remediation-task approva
 `terraform plan` for stages 01, 03, 04 and 06 on every pull request and refuses plans
 that break the repo's own standard (`policy/*.rego`: no public blob, no shared keys
 outside the documented runtime exception, no Owner or Contributor grants, an identity on
-every policy assignment). Drift detection (`drift.yml`) plans nightly with
-`-detailed-exitcode` and opens an issue when reality has moved away from code.
+every policy assignment). Drift detection runs in both directions:
+
+| Detector | Question | How | Sees |
+|---|---|---|---|
+| `drift.yml` | Does reality still match the code? | `terraform plan -detailed-exitcode` nightly; drift opens an issue with the diff | Every Terraform-managed resource, once a day, without a caller |
+| Tripwire (`stages/01-foundation/tripwire.tf`) **(this fork)** | Who is touching reality? | Hourly log alert on `AzureActivity`: successful `/write` or `/delete` by any caller except the remediation identity; one email per caller | Every ARM change in the subscription, including resources Terraform doesn't manage (policy-deployed diagnostic settings, the CLI-created Activity Log export) |
+
+**This fork:** the starter's `drift.yml` described the tripwire as scheduled, but no alert
+rule existed; Lab 06 ran the query by hand. The tripwire excludes only the remediation
+identity, because every automated write runs as it and CI only plans. `/action`
+operations are left out on purpose: `terraform plan` calls `listKeys`, so including them
+would fire on every CI run. A 30-day calibration before deploy found three caller types:
+the owner (deploys and labs), the remediation identity (excluded), and Microsoft
+Defender writing Defender for Storage settings when a new storage account appears. That
+last one is kept, not excluded: it only follows a storage account being created, and an
+unknown principal changing security settings is what a tripwire is for.
 
 **This fork: both loops had to be repaired before they worked.**
 
@@ -266,8 +280,16 @@ compliance is the verification.
   `plan.txt` are gitignored.
 - **A nightly collector misses short-lived misconfigurations.** During the Lab 06 test,
   public access was on for about an hour between two collections and never reached a
-  POA&M. Policy compliance state and the Activity Log caught it. Reports show the state at
-  collection time, not continuous coverage.
+  POA&M. Policy compliance state and the Activity Log caught it, and the tripwire now
+  alerts on such a change within about an hour. Reports show the state at collection
+  time, not continuous coverage.
+- **The tripwire alerts on the owner's own applies.** `terraform apply` runs as the owner,
+  so every apply produces an alert. That is intended: each alert is checked against the
+  merged pull requests, and one without a matching PR is out-of-band. It also has limits:
+  up to about an hour plus ingestion delay, no data-plane operations (blob reads and
+  deletes are in `StorageBlobLogs`, Cosmos documents aren't covered), and it depends on
+  the Activity Log export, which was set up with the CLI in Lab 02. Deleting that export
+  is itself a `/delete` the tripwire reports, as long as that last event is exported.
 - **The pipeline can't yet alert on its own failures.** The POA&M timer didn't fire on
   2026-10-20 (`FunctionExecutionCount` 0). The miss was found by reviewing run history, not
   by an alert, because the Function Apps have no Application Insights. Planned: Application

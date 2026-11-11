@@ -74,6 +74,6 @@ for each is in [ARCHITECTURE.md](ARCHITECTURE.md); accepted gaps are in
 | Branch protection on `main` | Pull request and the four `gate (…)` checks required; no bypass | PR.PS, PR.AA |
 | OIDC federation for CI | No stored cloud credentials in GitHub | PR.AA |
 | `drift.yml` (nightly, `-detailed-exitcode`) | Out-of-band change opens an issue with the diff | DE.CM, DE.AE |
-| Activity Log KQL query (Lab 06) | Answers *who* made an out-of-band change. Run on demand, not scheduled: there is no alert rule yet (see ARCHITECTURE.md, known limits) | DE.AE |
+| Tripwire `alert-grc-out-of-band-writes-dev` + action group `ag-grc-owner-dev` (`stages/01-foundation/tripwire.tf`) **(fork)** | Hourly log alert: any successful write or delete in the Activity Log by a caller other than the remediation identity emails the owner, one alert per caller. Answers *who* is touching reality, including resources Terraform doesn't manage | DE.CM, DE.AE |
 | Prowler IaC scan before every apply | Terraform is scanned before it reaches Azure; findings are fixed or formally accepted | ID.RA, PR.PS |
 | Risk acceptances (RA-001 to RA-003) | Accepted findings carry a compensating control, an owner and a review date | GV.RM, ID.RA |
